@@ -59,6 +59,7 @@ app.post("/api/v1/content", userMiddleware, async (req, res) => {
     await ContentModel.create({
         link,
         type,
+        title: req.body.title,
         //@ts-ignore
         userId: req.userId,
         tags: []
@@ -75,6 +76,22 @@ app.get("/api/v1/content", userMiddleware, async (req, res) => {
     const userId = req.userId;
     const content = await ContentModel.find({
         userId: userId
+    }).populate("userId", "username")
+    res.json({
+        content
+    })
+})
+
+app.get("/api/v1/content/title", userMiddleware, async (req, res) => {
+    // @ts-ignore
+    const userId = req.userId;
+    const searchValue = req.query.searchValue;
+
+    const content = await ContentModel.find({
+        userId: userId,
+        link: {
+            $regex: searchValue
+        }
     }).populate("userId", "username")
     res.json({
         content
