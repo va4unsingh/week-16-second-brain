@@ -82,22 +82,6 @@ app.get("/api/v1/content", userMiddleware, async (req, res) => {
     })
 })
 
-app.get("/api/v1/content/title", userMiddleware, async (req, res) => {
-    // @ts-ignore
-    const userId = req.userId;
-    const searchValue = req.query.searchValue;
-
-    const content = await ContentModel.find({
-        userId: userId,
-        link: {
-            $regex: searchValue
-        }
-    }).populate("userId", "username")
-    res.json({
-        content
-    })
-})
-
 app.delete("/api/v1/content", userMiddleware, async (req, res) => {
     const contentId = req.body.contentId;
 
