@@ -1,7 +1,7 @@
 import { random } from "./utils";
 import jwt from "jsonwebtoken";
-import { ContentModel, LinkModel, UserModel } from "./db";
-import { JWT_PASSWORD } from "./config";
+import { ContentModel, LinkModel, UserModel } from "./db/db";
+import { JWT_PASSWORD } from "./constants";
 import { userMiddleware } from "./middleware";
 import cors from "cors";
 import bcrypt from "bcryptjs";
