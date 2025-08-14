@@ -1,10 +1,11 @@
-import express from "express";
 import { random } from "./utils";
 import jwt from "jsonwebtoken";
 import { ContentModel, LinkModel, UserModel } from "./db";
 import { JWT_PASSWORD } from "./config";
 import { userMiddleware } from "./middleware";
 import cors from "cors";
+import bcrypt from "bcryptjs"
+import express, { Request, Response } from "express";
 
 const app = express();
 app.use(express.json());
@@ -31,28 +32,25 @@ app.post("/api/v1/signup", async (req, res) => {
     }
 })
 
-app.post("/api/v1/signin", async (req, res) => {
-    const username = req.body.username;
-    const password = req.body.password;
+app.post("/api/v1/signin", async (req: Request, res: Response) => {
+    const { username, password } = req.body;
 
-    const existingUser = await UserModel.findOne({
-        username,
-        password
-    })
-    if (existingUser) {
-        const token = jwt.sign({
-            id: existingUser._id
-        }, JWT_PASSWORD)
+    const existingUser = await UserModel.findOne({ username });
 
-        res.json({
-            token
-        })
-    } else {
-        res.status(403).json({
-            message: "Incorrrect credentials"
-        })
+    if (!existingUser) {
+        res.status(400).json({ message: "Invalid username or password" });
+        return;
     }
-})
+
+    const isMatch = await bcrypt.compare(password, existingUser.password);
+    if (!isMatch) {
+        res.status(400).json({ message: "Invalid username or password" });
+        return;
+    }
+
+    const token = jwt.sign({ id: existingUser._id }, JWT_PASSWORD);
+    res.json({ token });
+});
 
 app.post("/api/v1/content", userMiddleware, async (req, res) => {
     const link = req.body.link;
