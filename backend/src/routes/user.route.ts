@@ -18,7 +18,6 @@ router.route("/signIn").post(signIn);
 router
   .route("/content")
   .post(userMiddleware, uploadContent)
-  .post(userMiddleware, uploadContent)
   .get(userMiddleware, getContent)
   .delete(userMiddleware, deleteContent);
 
