@@ -11,43 +11,74 @@ import { random } from "../utils/utils";
 
 const signUp = async (req: Request, res: Response) => {
   // TODO: zod validation , hash the password
-  const username = req.body.username;
-  const password = req.body.password;
-
   try {
-    await UserModel.create({
-      username: username,
-      password: password,
+    const { username, password } = req.body;
+
+    if (!username || !password) {
+      return res.status(400).json({
+        message: "All fields are required",
+      });
+    }
+
+    const existingUser = await UserModel.findOne({ username });
+
+    if (existingUser) {
+      return res.status(400).json({
+        message: "User already exist",
+      });
+    }
+
+    const user = await UserModel.create({
+      username: username.toLowerCase(),
+      password,
     });
 
-    res.json({
-      message: "User signed up",
-    });
-  } catch (e) {
-    res.status(411).json({
-      message: "User already exists",
+    if (!user) {
+      return res.status(400).json({
+        message: "User not registered",
+      });
+    }
+  } catch (error: any) {
+    console.error("SignUp Error: ", error);
+
+    return res.status(500).json({
+      message: "Internal server error while registering user",
+      success: false,
     });
   }
 };
 
 const signIn = async (req: Request, res: Response) => {
-  const { username, password } = req.body;
+  try {
+    const { username, password } = req.body;
 
-  const existingUser = await UserModel.findOne({ username }).select("+password")
+    const existingUser = await UserModel.findOne({ username }).select(
+      "+password"
+    );
 
-  if (!existingUser) {
-    res.status(400).json({ message: "Invalid username or password" });
-    return;
+    if (!existingUser) {
+      return res.status(400).json({
+        message: "Invalid username or password",
+      });
+    }
+
+    const isMatch = await bcrypt.compare(password, existingUser.password);
+    if (!isMatch) {
+      return res.status(400).json({
+        message: "Invalid username or password",
+      });
+    }
+
+    const token = jwt.sign({ id: existingUser._id }, JWT_PASSWORD);
+    res.json({ token });
+  } catch (error: any) {
+    console.error("SignIn Error: ", error);
+
+    return res.status(500).json({
+      message: "Internal server error while user login",
+      success: false,
+    });
   }
-
-  const isMatch = await bcrypt.compare(password, existingUser.password);
-  if (!isMatch) {
-    res.status(400).json({ message: "Invalid username or password" });
-    return;
-  }
-
-  const token = jwt.sign({ id: existingUser._id }, JWT_PASSWORD);
-  res.json({ token });
 };
 
 const uploadContent = async (req: Request, res: Response) => {
