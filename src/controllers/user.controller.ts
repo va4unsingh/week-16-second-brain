@@ -33,7 +33,7 @@ const signUp = async (req: Request, res: Response) => {
 const signIn = async (req: Request, res: Response) => {
   const { username, password } = req.body;
 
-  const existingUser = await UserModel.findOne({ username });
+  const existingUser = await UserModel.findOne({ username }).select("+password")
 
   if (!existingUser) {
     res.status(400).json({ message: "Invalid username or password" });
