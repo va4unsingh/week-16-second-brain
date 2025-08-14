@@ -4,28 +4,30 @@ import { LinkModel } from "../models/link.models";
 import { UserModel } from "../models/user.models";
 import { JWT_PASSWORD } from "../constants";
 import { userMiddleware } from "../middlewares/middleware";
-import express, { Request, Response } from "express";
+import express, { Request, RequestHandler, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { random } from "../utils/utils";
 
-const signUp = async (req: Request, res: Response) => {
+const signUp: RequestHandler = async (req: Request, res: Response) => {
   // TODO: zod validation , hash the password
   try {
     const { username, password } = req.body;
 
     if (!username || !password) {
-      return res.status(400).json({
+      res.status(400).json({
         message: "All fields are required",
       });
+      return;
     }
 
     const existingUser = await UserModel.findOne({ username });
 
     if (existingUser) {
-      return res.status(400).json({
+      res.status(400).json({
         message: "User already exist",
       });
+      return;
     }
 
     const user = await UserModel.create({
@@ -34,21 +36,23 @@ const signUp = async (req: Request, res: Response) => {
     });
 
     if (!user) {
-      return res.status(400).json({
+      res.status(400).json({
         message: "User not registered",
       });
+      return;
     }
   } catch (error: any) {
     console.error("SignUp Error: ", error);
 
-    return res.status(500).json({
+    res.status(500).json({
       message: "Internal server error while registering user",
       success: false,
     });
+    return;
   }
 };
 
-const signIn = async (req: Request, res: Response) => {
+const signIn: RequestHandler = async (req: Request, res: Response) => {
   try {
     const { username, password } = req.body;
 
@@ -57,16 +61,18 @@ const signIn = async (req: Request, res: Response) => {
     );
 
     if (!existingUser) {
-      return res.status(400).json({
+      res.status(400).json({
         message: "Invalid username or password",
       });
+      return;
     }
 
     const isMatch = await bcrypt.compare(password, existingUser.password);
     if (!isMatch) {
-      return res.status(400).json({
+      res.status(400).json({
         message: "Invalid username or password",
       });
+      return;
     }
 
     const token = jwt.sign({ id: existingUser._id }, JWT_PASSWORD);
@@ -74,10 +80,11 @@ const signIn = async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error("SignIn Error: ", error);
 
-    return res.status(500).json({
+    res.status(500).json({
       message: "Internal server error while user login",
       success: false,
     });
+    return;
   }
 };
 
