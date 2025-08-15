@@ -4,8 +4,8 @@ import { UserModel } from "../models/user.models";
 import { Request, RequestHandler, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { random } from "../utils/utils";
 import mongoose from "mongoose";
+import crypto from "crypto";
 
 const signUp: RequestHandler = async (req: Request, res: Response) => {
   // TODO: zod validation , hash the password
@@ -201,7 +201,7 @@ const shareContent = async (req: Request, res: Response) => {
       });
       return;
     }
-    const hash = random(10);
+    const hash = crypto.randomBytes(10).toString("hex");
     await LinkModel.create({
       userId: req.userId,
       hash: hash,
