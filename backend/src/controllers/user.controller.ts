@@ -5,6 +5,7 @@ import { Request, RequestHandler, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { random } from "../utils/utils";
+import mongoose from "mongoose";
 
 const signUp: RequestHandler = async (req: Request, res: Response) => {
   // TODO: zod validation , hash the password
@@ -38,6 +39,17 @@ const signUp: RequestHandler = async (req: Request, res: Response) => {
       });
       return;
     }
+
+    res.status(200).json({
+      message: "User registered succesfully",
+      success: true,
+      user: {
+        id: user._id,
+        username: user.username,
+      },
+    });
+
+    return;
   } catch (error: any) {
     console.error("SignUp Error: ", error);
 
@@ -76,8 +88,22 @@ const signIn: RequestHandler = async (req: Request, res: Response) => {
     if (!jwtSecret) {
       throw new Error("JWT secret not defined");
     }
-    const token = jwt.sign({ id: existingUser._id }, jwtSecret);
-    res.json({ token });
+
+    const token = jwt.sign({ id: existingUser._id }, jwtSecret, {
+      expiresIn: "24h",
+    });
+
+    const cookieOptions = {
+      httpOnly: true,
+      secure: true,
+      maxAge: 24 * 60 * 60 * 1000,
+    };
+
+    res.status(200).cookie("token", token, cookieOptions).json({
+      success: true,
+      message: "Login successful",
+      token,
+    });
   } catch (error: any) {
     console.error("SignIn Error: ", error);
 
@@ -90,8 +116,7 @@ const signIn: RequestHandler = async (req: Request, res: Response) => {
 };
 
 const uploadContent = async (req: Request, res: Response) => {
-  const link = req.body.link;
-  const type = req.body.type;
+  const { link, type } = req.body;
   await ContentModel.create({
     link,
     type,
@@ -117,16 +142,50 @@ const getContent = async (req: Request, res: Response) => {
 };
 
 const deleteContent = async (req: Request, res: Response) => {
-  const contentId = req.body.contentId;
+  try {
+    const { id } = req.body;
 
-  await ContentModel.deleteMany({
-    contentId,
-    userId: req.userId,
-  });
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      res.status(400).json({
+        message: "Invalid or missing id",
+        success: false,
+      });
+      return;
+    }
 
-  res.json({
-    message: "Deleted",
-  });
+    if (!req.userId) {
+      res.status(401).json({
+        message: "Unauthorized: missing user ID",
+        success: false,
+      });
+      return;
+    }
+    const result = await ContentModel.deleteOne({
+      _id: new mongoose.Types.ObjectId(id),
+      userId: req.userId,
+    });
+
+    if (result.deletedCount === 0) {
+      res.status(404).json({
+        message: "Content not found or you do not have permission to delete it",
+        success: false,
+      });
+      return;
+    }
+
+    res.status(200).json({
+      message: "Content deleted successfully",
+      success: true,
+    });
+    return;
+  } catch (error) {
+    console.error("DeleteContent Error:", error);
+    res.status(500).json({
+      message: "Internal server error while deleting content",
+      success: false,
+    });
+    return;
+  }
 };
 
 const shareContent = async (req: Request, res: Response) => {
