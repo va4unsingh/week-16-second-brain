@@ -1,10 +1,7 @@
-import mongoose from "mongoose";
 import { ContentModel } from "../models/content.models";
 import { LinkModel } from "../models/link.models";
 import { UserModel } from "../models/user.models";
-import { JWT_PASSWORD } from "../constants";
-import { userMiddleware } from "../middlewares/middleware";
-import express, { Request, RequestHandler, Response } from "express";
+import { Request, RequestHandler, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { random } from "../utils/utils";
@@ -75,7 +72,11 @@ const signIn: RequestHandler = async (req: Request, res: Response) => {
       return;
     }
 
-    const token = jwt.sign({ id: existingUser._id }, JWT_PASSWORD);
+    const jwtSecret = process.env.JWT_PASSWORD;
+    if (!jwtSecret) {
+      throw new Error("JWT secret not defined");
+    }
+    const token = jwt.sign({ id: existingUser._id }, jwtSecret);
     res.json({ token });
   } catch (error: any) {
     console.error("SignIn Error: ", error);
